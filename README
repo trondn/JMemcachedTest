@@ -1,0 +1,15 @@
+Hi!
+
+This is a super-small implementation of a memcached client that
+only supports a subset of commands. It is not intended for
+real world use (currently it only speaks to one server, 
+you can't specify the data to store for a key etc).
+
+It's only purpose is to be used by the membase tester
+to verify membase behavior. It should be replaced with
+a real world memcached client as soon as possible
+
+
+Cheers,
+
+Trond Norbye
