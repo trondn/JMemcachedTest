@@ -31,16 +31,33 @@ public class MemcachedClient {
     private BinaryProtocolPipe pipe;
     private final String host;
     private final int port;
+    private final int bucket;
 
     public MemcachedClient(String host, int port) {
         this.host = host;
         this.port = port;
+        this.bucket = Integer.MAX_VALUE;
+    }
+
+    public MemcachedClient(String host, int port, int bucket) {
+        this.host = host;
+        this.port = port;
+        this.bucket = bucket;
     }
 
     private void ensurePipe() throws IOException {
         if (pipe == null) {
             socket = new Socket(host, port);
             pipe = new BinaryProtocolPipe(socket);
+
+            if (bucket != Integer.MAX_VALUE) {
+                pipe.send(new BinarySaslAuthCommand(bucket));
+                BinaryResponse rsp = pipe.nextResponse();
+                if (rsp.getStatus() != ErrorCode.SUCCESS) {
+                    socket.close();
+                    throw new IOException("Incorrect sasl");
+                }
+            }
         }
     }
 
