@@ -18,6 +18,8 @@ package org.membase.jmemcachedtest;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This memcached driver is only used to drive get-set load to the memcached
@@ -31,18 +33,19 @@ public class MemcachedClient {
     private BinaryProtocolPipe pipe;
     private final String host;
     private final int port;
-    private final int bucket;
+    private String auth;
+    private String passwd;
 
     public MemcachedClient(String host, int port) {
         this.host = host;
         this.port = port;
-        this.bucket = Integer.MAX_VALUE;
     }
 
-    public MemcachedClient(String host, int port, int bucket) {
+    public MemcachedClient(String host, int port, String auth, String passwd) {
         this.host = host;
         this.port = port;
-        this.bucket = bucket;
+        this.auth = auth;
+        this.passwd = passwd;
     }
 
     private void ensurePipe() throws IOException {
@@ -50,12 +53,11 @@ public class MemcachedClient {
             socket = new Socket(host, port);
             pipe = new BinaryProtocolPipe(socket);
 
-            if (bucket != Integer.MAX_VALUE) {
-                pipe.send(new BinarySaslAuthCommand(bucket));
+            if (auth != null) {
+                pipe.send(new BinarySaslCommand(auth, passwd));
                 BinaryResponse rsp = pipe.nextResponse();
                 if (rsp.getStatus() != ErrorCode.SUCCESS) {
-                    socket.close();
-                    throw new IOException("Incorrect sasl");
+                    throw new IOException("AUTH FAILED");
                 }
             }
         }
@@ -89,6 +91,8 @@ public class MemcachedClient {
     public void shutdown() {
         try {
             if (socket != null) {
+                socket.shutdownInput();
+                socket.shutdownOutput();
                 socket.close();
             }
         } catch (IOException ex) {
@@ -118,5 +122,26 @@ public class MemcachedClient {
         if (rsp.getCode() != ComCode.NOOP) {
             throw new IOException("Failed to store data!");
         }
+    }
+
+    public boolean selectBucket(String name) throws IOException {
+        ensurePipe();
+        pipe.send(new BinarySelectBucket(name));
+        BinaryResponse rsp = pipe.nextResponse();
+        return rsp.getStatus() == ErrorCode.SUCCESS;
+    }
+
+    public boolean deleteBucket(String name, boolean force) throws IOException {
+        ensurePipe();
+        pipe.send(new BinaryDeleteBucket(name, force));
+        BinaryResponse rsp = pipe.nextResponse();
+        return rsp.getStatus() == ErrorCode.SUCCESS;
+    }
+
+    public boolean createBucket(String name, String module, String config) throws IOException {
+        ensurePipe();
+        pipe.send(new BinaryCreateBucket(name, module, config));
+        BinaryResponse rsp = pipe.nextResponse();
+        return rsp.getStatus() == ErrorCode.SUCCESS;
     }
 }
