@@ -18,8 +18,6 @@ package org.membase.jmemcachedtest;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * This memcached driver is only used to drive get-set load to the memcached

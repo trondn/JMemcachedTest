@@ -15,8 +15,6 @@
  */
 package org.membase.jmemcachedtest;
 
-import java.nio.ByteBuffer;
-
 /**
  * 
  * @author Trond Norbye
